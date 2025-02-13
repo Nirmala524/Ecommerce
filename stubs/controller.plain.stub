@@ -1,0 +1,105 @@
+<?php
+
+namespace {{ namespace }};
+
+use {{ rootNamespace }}Http\Controllers\Controller;
+use Illuminate\Http\Request;
+
+class {{ class }} extends Controller
+{
+     public function index()
+    {
+        $data = Team::all();
+        return view('admin.team.showdata', ['data' => $data]);
+    }
+
+   public function create(){
+    return view('admin.team.create');
+   }
+    public function store(Request $request)
+    {
+       $input = $request->all();
+
+
+        $request->validate([
+            'name' => 'required | min:3 ',
+            'post' => 'required',
+            'image' => 'required |mimes:jpeg,png,jpg,gif,svg',
+            // 'facebook' => 'required',
+            // 'twitter' => 'required',
+            // 'instagram' => 'required',
+            // 'youtube' => 'required',
+
+
+
+        ]);
+
+        $input['status'] = 1;
+        $image = $request->file('image');
+        $imageName = time() . '.' . $image->getClientOriginalExtension();
+        $image->storeAs('team', $imageName);
+        // request()->image->move(public_path('image/team/'), $imageName);
+        $input['image'] = $imageName;
+
+        Team::create($input);
+        return redirect('admin/team/')->with('status', 'Recored  Created Successfuly!');
+    }
+
+    
+    public function edit( $id)
+    {
+        $data = Team::find($id);
+        return view('admin.team.edit', ['data' => $data]);
+    }
+
+    
+    public function update(Request $request)
+    {
+       $data = Team::find($request->id);
+        $request->validate([
+            'name' => 'required | min:3 ',
+            'post' => 'required',
+        ]);
+        $image = $request->file('image');
+
+        if (isset($request->image)) {
+            $request->validate([
+                'image' => 'required | mimes:jpeg,png,jpg,gif,svg',
+
+            ]);
+            if (file_exists(public_path('storage/team/' . $data->image))) {
+                unlink(public_path('storage/team/' . $data->image));
+            }
+
+            $imageName = time() . '.' . $image->getClientOriginalExtension();
+            $image->storeAs('team', $imageName);
+
+            request()->image->move(public_path('image/team/'), $imageName);
+            $data['image'] = $imageName;
+        }
+        $data['name'] = $request->name;
+        $data['post'] = $request->post;
+        $data['status'] = isset($request->status) ? 1 : 0;
+
+        $data->save();
+        return redirect('admin/team/')->with('status', 'Recored Updated Successfuly!');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        $data = Team::find($id);
+        if (isset($data)) {
+
+            if (file_exists(public_path('storage/team/' . $data->image))) {
+                unlink(public_path('storage/team/' . $data->image));
+            }
+            $data->delete();
+            return redirect('admin/team/')->with('delete', 'Recored Deleted Successfuly!');
+        } else {
+            return "record not found";
+        }
+    }
+}
